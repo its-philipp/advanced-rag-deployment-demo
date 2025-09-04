@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+openai
+sentence-transformers
+qdrant-client
+pydantic
+email-validator>=2.0
+python-dotenv
