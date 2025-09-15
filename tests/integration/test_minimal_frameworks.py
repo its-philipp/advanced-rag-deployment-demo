@@ -8,11 +8,13 @@ import asyncio
 import sys
 import os
 from pathlib import Path
+import pytest
 
 # Add src to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+@pytest.mark.asyncio
 async def test_imports():
     """Test if all imports work"""
     print("🔍 Testing imports...")
@@ -54,6 +56,7 @@ async def test_imports():
     
     return True
 
+@pytest.mark.asyncio
 async def test_basic_functionality():
     """Test basic functionality of each framework"""
     print("\n🧪 Testing basic functionality...")

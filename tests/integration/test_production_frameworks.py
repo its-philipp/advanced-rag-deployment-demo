@@ -8,6 +8,7 @@ import asyncio
 import sys
 import os
 from pathlib import Path
+import pytest
 
 # Add src to path
 project_root = Path(__file__).parent.parent.parent
@@ -17,6 +18,7 @@ from src.agents.production_frameworks import ProductionFrameworksComparison
 from src.agents.memory_manager import AgenticMemoryManager
 from src.app.services.user_context import UserContext
 
+@pytest.mark.asyncio
 async def test_production_frameworks():
     """Test all production frameworks"""
     print("🚀 Testing Production Frameworks for Agentic RAG")

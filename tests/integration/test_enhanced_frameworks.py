@@ -9,6 +9,7 @@ import sys
 import os
 from pathlib import Path
 from unittest.mock import patch, Mock
+import pytest
 
 # Add src to path
 project_root = Path(__file__).parent.parent.parent
@@ -28,6 +29,7 @@ from src.agents.langgraph_agent import LangGraphAgenticRAG
 from src.agents.semantic_kernel_simple import SemanticKernelSimpleRAG
 from src.app.services.user_context import UserContext
 
+@pytest.mark.asyncio
 async def test_enhanced_frameworks():
     """Test enhanced frameworks with monitoring and persistence"""
     print("🚀 Enhanced Production Frameworks Test")

@@ -9,6 +9,7 @@ import sys
 import os
 from pathlib import Path
 from unittest.mock import patch, Mock
+import pytest
 
 # Add src to path
 project_root = Path(__file__).parent.parent.parent
@@ -29,6 +30,7 @@ from src.agents.semantic_kernel_simple import SemanticKernelSimpleRAG
 from src.app.services.user_context import UserContext
 
 
+@pytest.mark.asyncio
 async def test_enhanced_frameworks_mocked():
     """Test enhanced frameworks with mocked external dependencies"""
     print("🚀 Enhanced Production Frameworks Test (MOCKED)")
@@ -86,7 +88,7 @@ async def test_enhanced_frameworks_mocked():
                 {"step": 3, "action": "Practice with datasets", "description": "Work with real-world datasets"},
                 {"step": 4, "action": "Build projects", "description": "Create end-to-end ML projects"}
             ],
-            success_rate=0.85
+            success_criteria=["Can build ML models", "Understands data preprocessing", "Knows evaluation metrics"]
         )
         
         # Test queries

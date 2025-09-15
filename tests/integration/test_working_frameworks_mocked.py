@@ -10,6 +10,7 @@ import os
 import time
 from pathlib import Path
 from unittest.mock import patch, Mock
+import pytest
 
 # Add src to path
 project_root = Path(__file__).parent.parent.parent
@@ -28,6 +29,7 @@ from src.agents.semantic_kernel_simple import SemanticKernelSimpleRAG
 from src.app.services.user_context import UserContext
 
 
+@pytest.mark.asyncio
 async def test_working_frameworks_mocked():
     """Test the working parts of each framework with mocks"""
     print("🚀 Working Production Frameworks Test (MOCKED)")
@@ -144,42 +146,43 @@ async def test_working_frameworks_mocked():
         
         # Test episodic memory
         print("  📚 Testing episodic memory...")
-        memory_manager.store_episodic("user_asked_about_python", {
-            "query": "What is Python programming?",
-            "response": "Python is a high-level programming language",
-            "timestamp": "2024-01-01T10:00:00Z",
-            "importance": 0.8
-        })
+        await memory_manager.store_episodic(
+            user_id="test_user",
+            event_type="user_asked_about_python",
+            content="What is Python programming?",
+            context={
+                "query": "What is Python programming?",
+                "response": "Python is a high-level programming language",
+                "timestamp": "2024-01-01T10:00:00Z",
+                "importance": 0.8
+            }
+        )
         
-        episodic_memories = memory_manager.retrieve_episodic("python")
+        episodic_memories = await memory_manager.retrieve_episodic("python")
         print(f"     Stored and retrieved {len(episodic_memories)} episodic memories")
         
         # Test semantic memory
         print("  🔍 Testing semantic memory...")
-        memory_manager.store_semantic("python_programming", {
+        await memory_manager.store_semantic("python_programming", {
             "concept": "Python programming",
             "description": "A high-level programming language",
             "key_features": ["readable", "versatile", "powerful"],
             "use_cases": ["web development", "data science", "AI"]
         })
         
-        semantic_memories = memory_manager.retrieve_semantic("python")
+        semantic_memories = await memory_manager.retrieve_semantic("python")
         print(f"     Stored and retrieved {len(semantic_memories)} semantic memories")
         
         # Test procedural memory
         print("  🔧 Testing procedural memory...")
-        memory_manager.store_procedural("learn_python", {
-            "skill": "learning Python",
-            "steps": [
-                "Install Python",
-                "Learn basics",
-                "Practice coding",
-                "Build projects"
-            ],
-            "success_rate": 0.9
-        })
+        await memory_manager.store_procedural("learn_python", [
+            {"step": 1, "action": "Install Python", "description": "Set up Python environment"},
+            {"step": 2, "action": "Learn basics", "description": "Master Python syntax"},
+            {"step": 3, "action": "Practice coding", "description": "Solve coding problems"},
+            {"step": 4, "action": "Build projects", "description": "Create applications"}
+        ], success_criteria=["Can write Python code", "Understands OOP", "Can build projects"])
         
-        procedural_memories = memory_manager.retrieve_procedural("python")
+        procedural_memories = await memory_manager.retrieve_procedural("python")
         print(f"     Stored and retrieved {len(procedural_memories)} procedural memories")
         
         # Test user context
@@ -200,10 +203,11 @@ async def test_working_frameworks_mocked():
         ])
         
         # Get context
-        context = user_context.get_context()
-        print(f"     User preferences: {context['preferences']}")
-        print(f"     Learning goals: {context['learning_goals']}")
-        print(f"     Context history: {len(context['history'])} entries")
+        context = user_context.get_recent_context()
+        summary = user_context.get_user_summary()
+        print(f"     User preferences: {summary['preferences']}")
+        print(f"     Learning goals: {summary['learning_goals']}")
+        print(f"     Context history: {len(context)} entries")
         
         # Display final results
         print("\n📋 Final Results Summary:")

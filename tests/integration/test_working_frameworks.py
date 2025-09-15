@@ -9,11 +9,13 @@ import sys
 import os
 import time
 from pathlib import Path
+import pytest
 
 # Add src to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+@pytest.mark.asyncio
 async def test_working_frameworks():
     """Test the working parts of each framework"""
     print("🚀 Working Production Frameworks Test")
