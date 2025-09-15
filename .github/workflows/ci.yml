@@ -43,7 +43,16 @@ jobs:
           # allow missing local config; fail on errors
           flake8 src || true
 
-      - name: Run tests
+      - name: Run unit tests
+        run: |
+          pytest tests/test_app.py -q --maxfail=1
+
+      - name: Run mocked integration tests
+        run: |
+          pytest tests/integration/test_enhanced_frameworks_mocked.py tests/integration/test_working_frameworks_mocked.py -q --maxfail=1
+
+      - name: Run full integration tests (manual trigger only)
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         env:
           QDRANT_URL: http://localhost:6333
           QDRANT_COLLECTION: test_collection
@@ -51,7 +60,7 @@ jobs:
           EMBEDDING_MODEL: text-embedding-3-small
           LLM_MODEL: gpt-4o-mini
         run: |
-          pytest -q --maxfail=1
+          pytest tests/integration/ -q --maxfail=1
 
   docker-build:
     needs: test

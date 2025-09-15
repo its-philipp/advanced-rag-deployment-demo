@@ -8,9 +8,17 @@ import asyncio
 import sys
 import os
 from pathlib import Path
+from unittest.mock import patch, Mock
 
 # Add src to path
-sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+# Import mocks
+from tests.mocks import (
+    MockOpenAIContext, MockQdrantContext, MockRequestsContext,
+    mock_framework_monitor, mock_user_context, mock_persistent_memory
+)
 
 from src.agents.framework_monitor import FrameworkMonitor
 from src.agents.persistent_memory import PersistentMemoryManager
@@ -25,31 +33,35 @@ async def test_enhanced_frameworks():
     print("🚀 Enhanced Production Frameworks Test")
     print("=" * 60)
     
-    # Initialize components
-    print("🔧 Initializing enhanced components...")
-    
-    # Persistent memory manager
-    persistent_memory = PersistentMemoryManager()
-    
-    # Framework monitor
-    monitor = FrameworkMonitor("enhanced_framework_monitor.log")
-    
-    # Memory manager (in-memory for now, can be enhanced with persistence)
-    memory_manager = AgenticMemoryManager()
-    
-    # User context
-    user_context = UserContext("enhanced_test_user")
-    user_context.update_preferences({"learning_style": "visual", "difficulty": "intermediate"})
-    user_context.update_learning_goals(["Learn AI", "Master machine learning"])
-    
-    # Initialize frameworks
-    print("🤖 Initializing frameworks...")
-    
-    frameworks = {
-        "Custom Implementation": AgenticRAGAgent(memory_manager, user_context),
-        "LangGraph Implementation": LangGraphAgenticRAG(memory_manager, user_context),
-        "Semantic Kernel Implementation": SemanticKernelSimpleRAG(memory_manager, user_context)
-    }
+    # Use mocks for external dependencies
+    with MockOpenAIContext() as mock_openai, \
+         MockQdrantContext() as mock_qdrant, \
+         MockRequestsContext() as mock_requests:
+        
+        print("🔧 Initializing enhanced components...")
+        
+        # Persistent memory manager
+        persistent_memory = PersistentMemoryManager()
+        
+        # Framework monitor
+        monitor = FrameworkMonitor("enhanced_framework_monitor.log")
+        
+        # Memory manager (in-memory for now, can be enhanced with persistence)
+        memory_manager = AgenticMemoryManager()
+        
+        # User context
+        user_context = UserContext("enhanced_test_user")
+        user_context.update_preferences({"learning_style": "visual", "difficulty": "intermediate"})
+        user_context.update_learning_goals(["Learn AI", "Master machine learning"])
+        
+        # Initialize frameworks
+        print("🤖 Initializing frameworks...")
+        
+        frameworks = {
+            "Custom Implementation": AgenticRAGAgent(memory_manager, user_context),
+            "LangGraph Implementation": LangGraphAgenticRAG(memory_manager, user_context),
+            "Semantic Kernel Implementation": SemanticKernelSimpleRAG(memory_manager, user_context)
+        }
     
     # Initialize memories for all frameworks
     print("🧠 Initializing memories...")

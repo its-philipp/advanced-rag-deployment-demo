@@ -10,7 +10,8 @@ import os
 from pathlib import Path
 
 # Add src to path
-sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
 async def test_imports():
     """Test if all imports work"""
