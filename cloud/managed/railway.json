@@ -1,0 +1,29 @@
+{
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
+  },
+  "deploy": {
+    "startCommand": "uvicorn src.app.main:app --host 0.0.0.0 --port $PORT",
+    "healthcheckPath": "/docs",
+    "healthcheckTimeout": 100,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "QDRANT_URL": "https://your-qdrant-instance.railway.app",
+        "QDRANT_COLLECTION": "rag_documents",
+        "EMBEDDING_MODEL": "text-embedding-3-small",
+        "LLM_MODEL": "gpt-4o-mini",
+        "APP_HOST": "0.0.0.0",
+        "APP_PORT": "$PORT"
+      },
+      "secrets": {
+        "OPENAI_API_KEY": "your-openai-api-key",
+        "QDRANT_API_KEY": "your-qdrant-api-key"
+      }
+    }
+  }
+}

@@ -1,0 +1,192 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agentic-rag
+  namespace: rag-demo
+  labels:
+    app: agentic-rag
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: agentic-rag
+  template:
+    metadata:
+      labels:
+        app: agentic-rag
+    spec:
+      containers:
+      - name: agentic-rag
+        image: your-registry.azurecr.io/agentic-rag:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: AZURE_OPENAI_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: azure-secrets
+              key: openai-endpoint
+        - name: AZURE_OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: azure-secrets
+              key: openai-key
+        - name: AZURE_OPENAI_DEPLOYMENT
+          valueFrom:
+            configMapKeyRef:
+              name: agentic-config
+              key: openai-deployment
+        - name: QDRANT_URL
+          valueFrom:
+            configMapKeyRef:
+              name: agentic-config
+              key: qdrant-url
+        - name: QDRANT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: azure-secrets
+              key: qdrant-key
+        - name: MEMORY_STORAGE_PATH
+          value: "/app/memory"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: memory-storage
+          mountPath: /app/memory
+        - name: config-volume
+          mountPath: /app/config
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+      volumes:
+      - name: memory-storage
+        persistentVolumeClaim:
+          claimName: agentic-memory-pvc
+      - name: config-volume
+        configMap:
+          name: agentic-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agentic-rag-service
+  namespace: rag-demo
+  labels:
+    app: agentic-rag
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: agentic-rag
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: agentic-memory-pvc
+  namespace: rag-demo
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: azurefile
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agentic-config
+  namespace: rag-demo
+data:
+  openai-deployment: "gpt-4o-mini"
+  qdrant-url: "http://qdrant-service:6333"
+  memory-persistence: "true"
+  max-episodic-memories: "1000"
+  max-semantic-concepts: "500"
+  max-procedural-skills: "100"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: azure-secrets
+  namespace: rag-demo
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual values
+  openai-endpoint: "eW91ci1vcGVuYWktZW5kcG9pbnQ="
+  openai-key: "eW91ci1vcGVuYWktYXBpLWtleQ=="
+  qdrant-key: "eW91ci1xZHJhbnQtYXBpLWtleQ=="
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: agentic-rag-hpa
+  namespace: rag-demo
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: agentic-rag
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: agentic-rag-ingress
+  namespace: rag-demo
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  tls:
+  - hosts:
+    - agentic-rag.yourdomain.com
+    secretName: agentic-rag-tls
+  rules:
+  - host: agentic-rag.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: agentic-rag-service
+            port:
+              number: 80

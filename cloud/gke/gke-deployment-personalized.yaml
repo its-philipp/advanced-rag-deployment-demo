@@ -1,0 +1,183 @@
+# GKE deployment for personalized coaching system with persistent storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rag-demo-user-data
+  namespace: rag-demo
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-demo
+  namespace: rag-demo
+  labels:
+    app: rag-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rag-demo
+  template:
+    metadata:
+      labels:
+        app: rag-demo
+    spec:
+      containers:
+      - name: rag-demo
+        image: gcr.io/rag-demo-471810/rag-demo:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: QDRANT_URL
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: QDRANT_URL
+        - name: QDRANT_COLLECTION
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: QDRANT_COLLECTION
+        - name: EMBEDDING_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: EMBEDDING_MODEL
+        - name: LLM_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: LLM_MODEL
+        - name: APP_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: APP_HOST
+        - name: APP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: APP_PORT
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rag-demo-secrets
+              key: OPENAI_API_KEY
+        - name: QDRANT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rag-demo-secrets
+              key: QDRANT_API_KEY
+        volumeMounts:
+        - name: user-data
+          mountPath: /app/.rag-demo
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
+      volumes:
+      - name: user-data
+        persistentVolumeClaim:
+          claimName: rag-demo-user-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-demo-service
+  namespace: rag-demo
+  labels:
+    app: rag-demo
+spec:
+  selector:
+    app: rag-demo
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  type: LoadBalancer
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: rag-demo-hpa
+  namespace: rag-demo
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: rag-demo
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: rag-demo-ssl-cert
+  namespace: rag-demo
+spec:
+  domains:
+    - rag-demo.yourdomain.com  # Replace with your domain
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rag-demo-ingress
+  namespace: rag-demo
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "rag-demo-ip"
+    networking.gke.io/managed-certificates: "rag-demo-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+  - host: rag-demo.yourdomain.com
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: rag-demo-service
+            port:
+              number: 80

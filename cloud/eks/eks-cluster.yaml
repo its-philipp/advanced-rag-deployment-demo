@@ -1,0 +1,46 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: rag-demo-cluster
+  region: us-west-2
+  version: "1.28"
+
+nodeGroups:
+  - name: rag-demo-nodes
+    instanceType: t3.medium
+    desiredCapacity: 2
+    minSize: 1
+    maxSize: 5
+    volumeSize: 20
+    volumeType: gp3
+    ssh:
+      allow: true
+    iam:
+      withAddonPolicies:
+        imageBuilder: true
+        autoScaler: true
+        externalDNS: true
+        certManager: true
+        appMesh: true
+        ebs: true
+        fsx: true
+        cloudWatch: true
+
+addons:
+  - name: vpc-cni
+    version: latest
+  - name: coredns
+    version: latest
+  - name: kube-proxy
+    version: latest
+  - name: aws-ebs-csi-driver
+    version: latest
+
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["*"]
+    logRetentionInDays: 7
+
+secretsEncryption:
+  keyARN: arn:aws:kms:us-west-2:ACCOUNT_ID:key/KEY_ID  # Replace with your KMS key

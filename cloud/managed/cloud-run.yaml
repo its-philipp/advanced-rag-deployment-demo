@@ -1,0 +1,62 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: rag-demo
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/execution-environment: gen2
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "10"
+        run.googleapis.com/cpu-throttling: "false"
+        run.googleapis.com/memory: "1Gi"
+        run.googleapis.com/cpu: "1000m"
+    spec:
+      containerConcurrency: 100
+      timeoutSeconds: 300
+      containers:
+      - image: gcr.io/PROJECT_ID/rag-demo:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: QDRANT_URL
+          value: "https://your-qdrant-instance.run.app"
+        - name: QDRANT_COLLECTION
+          value: "rag_documents"
+        - name: EMBEDDING_MODEL
+          value: "text-embedding-3-small"
+        - name: LLM_MODEL
+          value: "gpt-4o-mini"
+        - name: APP_HOST
+          value: "0.0.0.0"
+        - name: APP_PORT
+          value: "8080"
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rag-demo-secrets
+              key: openai-api-key
+        - name: QDRANT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rag-demo-secrets
+              key: qdrant-api-key
+        resources:
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        livenessProbe:
+          httpGet:
+            path: /docs
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /docs
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10

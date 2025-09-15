@@ -1,0 +1,130 @@
+# AKS-specific deployment with Azure optimizations
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-demo
+  namespace: rag-demo
+  labels:
+    app: rag-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rag-demo
+  template:
+    metadata:
+      labels:
+        app: rag-demo
+    spec:
+      containers:
+      - name: rag-demo
+        image: ragdemo.azurecr.io/rag-demo:latest  # Replace with your ACR URL
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: QDRANT_URL
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: QDRANT_URL
+        - name: QDRANT_COLLECTION
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: QDRANT_COLLECTION
+        - name: EMBEDDING_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: EMBEDDING_MODEL
+        - name: LLM_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: LLM_MODEL
+        - name: APP_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: APP_HOST
+        - name: APP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: APP_PORT
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rag-demo-secrets
+              key: OPENAI_API_KEY
+        - name: QDRANT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rag-demo-secrets
+              key: QDRANT_API_KEY
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /docs
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /docs
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-demo-service
+  namespace: rag-demo
+  labels:
+    app: rag-demo
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+    service.beta.kubernetes.io/azure-load-balancer-resource-group: "rag-demo-rg"
+spec:
+  selector:
+    app: rag-demo
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  type: LoadBalancer
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rag-demo-ingress
+  namespace: rag-demo
+  annotations:
+    kubernetes.io/ingress.class: "addon-http-application-routing"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - rag-demo.yourdomain.com
+    secretName: rag-demo-tls
+  rules:
+  - host: rag-demo.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: rag-demo-service
+            port:
+              number: 80

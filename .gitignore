@@ -52,6 +52,11 @@ Thumbs.db
 # Logs
 *.log
 logs/
+enhanced_framework_monitor.log
+
+# Project-specific ignores
+docker/versions/*.log
+scripts/monitoring/*.log
 
 # Docker
 .dockerignore

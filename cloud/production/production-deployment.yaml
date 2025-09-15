@@ -1,0 +1,221 @@
+# Production-ready deployment with all optimizations
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-demo
+  namespace: rag-demo
+  labels:
+    app: rag-demo
+    version: v1.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: rag-demo
+  template:
+    metadata:
+      labels:
+        app: rag-demo
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: rag-demo-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+      containers:
+      - name: rag-demo
+        image: gcr.io/PROJECT_ID/rag-demo:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: QDRANT_URL
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: QDRANT_URL
+        - name: QDRANT_COLLECTION
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: QDRANT_COLLECTION
+        - name: EMBEDDING_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: EMBEDDING_MODEL
+        - name: LLM_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: LLM_MODEL
+        - name: APP_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: APP_HOST
+        - name: APP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: rag-demo-config
+              key: APP_PORT
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rag-demo-secrets
+              key: OPENAI_API_KEY
+        - name: QDRANT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rag-demo-secrets
+              key: QDRANT_API_KEY
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+            ephemeral-storage: "1Gi"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+            ephemeral-storage: "2Gi"
+        livenessProbe:
+          httpGet:
+            path: /docs
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /docs
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: cache
+          mountPath: /app/cache
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: cache
+        emptyDir: {}
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - rag-demo
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rag-demo-sa
+  namespace: rag-demo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-demo-service
+  namespace: rag-demo
+  labels:
+    app: rag-demo
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+spec:
+  selector:
+    app: rag-demo
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  type: LoadBalancer
+  sessionAffinity: None
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: rag-demo-pdb
+  namespace: rag-demo
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: rag-demo
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: rag-demo-netpol
+  namespace: rag-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: rag-demo
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    - podSelector:
+        matchLabels:
+          app: rag-demo
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: qdrant
+    ports:
+    - protocol: TCP
+      port: 6333
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80

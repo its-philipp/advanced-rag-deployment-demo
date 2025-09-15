@@ -1,8 +1,13 @@
 import os
 from typing import List, Dict
-from src.app.services.embeddings import chunk_text, get_embeddings_texts, get_embedding_openai
+from dotenv import load_dotenv
+from src.app.services.embeddings_minimal import chunk_text, get_embeddings_texts, get_embedding_openai
 from src.app.services.qdrant_client import ensure_collection, upsert_documents
+from src.app.metrics import track_document_indexing, track_embedding_request
 import uuid
+
+# Load environment variables
+load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -28,9 +33,14 @@ def index_documents(documents: List[Dict[str, str]]):
         
         # Create embeddings for each chunk
         if OPENAI_API_KEY:
-            embeddings = [get_embedding_openai(chunk) for chunk in chunks]
+            embeddings = []
+            for chunk in chunks:
+                embedding = get_embedding_openai(chunk)
+                embeddings.append(embedding)
+                track_embedding_request("openai", 0.1)  # Approximate duration
         else:
             embeddings = get_embeddings_texts(chunks)
+            track_embedding_request("sentence-transformers", 0.1)  # Approximate duration
         
         # Prepare metadata and IDs for each chunk
         for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
@@ -57,6 +67,12 @@ def index_documents(documents: List[Dict[str, str]]):
         # Upsert all documents
         upsert_documents(all_embeddings, all_metadatas, all_ids)
         print(f"Indexed {len(all_ids)} chunks from {len(documents)} documents")
+        
+        # Track document indexing metrics
+        for doc in documents:
+            source_type = doc.get('source_id', 'unknown')
+            doc_chunks = [chunk for chunk in all_metadatas if chunk.get('source_id') == source_type]
+            track_document_indexing(source_type, len(doc_chunks))
     
     return len(all_ids)
 

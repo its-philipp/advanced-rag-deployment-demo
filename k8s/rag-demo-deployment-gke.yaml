@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-demo
+  namespace: rag-demo
+  labels:
+    app: rag-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rag-demo
+  template:
+    metadata:
+      labels:
+        app: rag-demo
+    spec:
+      containers:
+      - name: rag-demo
+        image: gcr.io/rag-demo-471810/rag-demo:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: QDRANT_URL
+          value: "https://610ea6c6-e6eb-4252-a82b-8fc28f9ccb13.eu-central-1-0.aws.cloud.qdrant.io"
+        - name: QDRANT_COLLECTION
+          value: "rag_documents"
+        - name: EMBEDDING_MODEL
+          value: "text-embedding-3-small"
+        - name: LLM_MODEL
+          value: "gpt-4o-mini"
+        - name: APP_HOST
+          value: "0.0.0.0"
+        - name: APP_PORT
+          value: "8080"
+        - name: OPENAI_API_KEY
+          value: "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"
+        - name: QDRANT_API_KEY
+          value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.M-5Mz45IeEHc4IN7lBr5nCVlc830JcjcnuUwYWlv2H0"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-demo-service
+  namespace: rag-demo
+  labels:
+    app: rag-demo
+spec:
+  selector:
+    app: rag-demo
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  type: LoadBalancer
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: rag-demo-hpa
+  namespace: rag-demo
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: rag-demo
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

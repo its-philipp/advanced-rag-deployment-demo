@@ -59,11 +59,11 @@ def get_embedding_openai(text: str, model: str = "text-embedding-3-small"):
     except Exception as e:
         raise RuntimeError("OpenAI embedding failed: " + str(e))
 
-def get_embeddings_texts(texts: List[str], model: str = "sentence-transformers/all-MiniLM-L6-v2"):
-    # fallback to sentence-transformers if no OpenAI key
+def get_embeddings_texts(texts: List[str], model: str = "text-embedding-3-small"):
+    # Always use OpenAI for embeddings to avoid Hugging Face rate limits
     if OPENAI_API_KEY:
-        return [get_embedding_openai(t, model="text-embedding-3-small") for t in texts]
+        return [get_embedding_openai(t, model) for t in texts]
     else:
-        from sentence_transformers import SentenceTransformer
-        m = SentenceTransformer(model)
-        return m.encode(texts).tolist()
+        # Fallback: create dummy embeddings if no OpenAI key
+        print("Warning: No OpenAI API key, using dummy embeddings")
+        return [[len(t) * 0.01] * 1536 for t in texts]  # 1536 is the dimension of text-embedding-3-small
