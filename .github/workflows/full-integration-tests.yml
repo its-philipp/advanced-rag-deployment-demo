@@ -1,0 +1,43 @@
+name: Full Integration Tests
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  full-integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio
+
+      - name: Start services with Docker Compose
+        run: |
+          docker-compose up -d
+          # Wait for services to be ready
+          sleep 30
+
+      - name: Run full integration tests
+        env:
+          QDRANT_URL: http://localhost:6333
+          QDRANT_COLLECTION: test_collection
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EMBEDDING_MODEL: text-embedding-3-small
+          LLM_MODEL: gpt-4o-mini
+        run: |
+          pytest tests/integration/ -v --maxfail=1 --disable-warnings
+
+      - name: Stop services
+        if: always()
+        run: |
+          docker-compose down

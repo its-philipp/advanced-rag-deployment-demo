@@ -17,3 +17,4 @@ crewai
 semantic-kernel
 numpy
 pandas
+pytest-asyncio
