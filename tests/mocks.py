@@ -180,12 +180,24 @@ def mock_persistent_memory():
 class MockOpenAIContext:
     """Context manager for mocking OpenAI"""
     def __enter__(self):
-        self.patcher = patch('openai.OpenAI', return_value=mock_openai_client())
-        self.mock_client = self.patcher.start()
-        return self.mock_client
+        # Patch multiple OpenAI modules and classes
+        self.patchers = [
+            patch('openai.OpenAI', return_value=mock_openai_client()),
+            patch('openai.AsyncOpenAI', return_value=mock_openai_client()),
+            patch('openai.ChatCompletion', return_value=MockOpenAIResponse()),
+            patch('openai.Embedding', return_value=Mock()),
+            # Patch environment variable
+            patch.dict('os.environ', {'OPENAI_API_KEY': 'test-key-12345'})
+        ]
+        
+        for patcher in self.patchers:
+            patcher.start()
+        
+        return mock_openai_client()
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.patcher.stop()
+        for patcher in self.patchers:
+            patcher.stop()
 
 
 class MockQdrantContext:

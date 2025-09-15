@@ -36,10 +36,15 @@ async def test_enhanced_frameworks_mocked():
     print("🚀 Enhanced Production Frameworks Test (MOCKED)")
     print("=" * 60)
     
+    # Set environment variable for OpenAI
+    import os
+    os.environ['OPENAI_API_KEY'] = 'test-key-12345'
+    
     # Use mocks for external dependencies
     with MockOpenAIContext() as mock_openai, \
          MockQdrantContext() as mock_qdrant, \
-         MockRequestsContext() as mock_requests:
+         MockRequestsContext() as mock_requests, \
+         patch('langchain_openai.ChatOpenAI') as mock_chat_openai:
         
         print("🔧 Initializing enhanced components...")
         
