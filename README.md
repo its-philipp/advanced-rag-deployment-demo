@@ -1,4 +1,18 @@
-# Advanced RAG System
+# Advanced RAG System with Agentic AI Frameworks
+
+A comprehensive Retrieval-Augmented Generation (RAG) system featuring multiple AI agent frameworks including LangGraph, Semantic Kernel, and custom implementations. The project provides production-ready deployment configurations for Kubernetes, cloud platforms (GKE, AKS, EKS), and serverless environments.
+
+**Key Features:**
+- 🤖 **Multi-Framework Support**: Custom Agentic RAG, LangGraph, and Semantic Kernel implementations
+- 🧠 **Advanced Memory Management**: Episodic, semantic, and procedural memory systems
+- 📊 **Production Monitoring**: Grafana dashboards and Prometheus metrics
+- ☁️ **Cloud-Ready**: Kubernetes manifests and cloud deployment configs
+- 🔧 **Comprehensive Testing**: Unit tests, mocked integration tests, and full integration test suites
+- 🚀 **Scalable Architecture**: Horizontal Pod Autoscaling and production optimizations
+
+**Tech Stack:** FastAPI, Qdrant, OpenAI, LangChain, Semantic Kernel, Kubernetes, Docker, Grafana, Prometheus
+
+---
 
 **Production-Ready RAG Backend with FastAPI & Cloud Deployment**
 
