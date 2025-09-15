@@ -51,11 +51,11 @@ jobs:
           EMBEDDING_MODEL: text-embedding-3-small
           LLM_MODEL: gpt-4o-mini
         run: |
-          pytest tests/test_app.py -q --maxfail=1
+          pytest tests/test_app.py -q --maxfail=1 --disable-warnings
 
       - name: Run mocked integration tests
         run: |
-          pytest tests/integration/test_enhanced_frameworks_mocked.py tests/integration/test_working_frameworks_mocked.py -q --maxfail=1
+          pytest tests/integration/test_enhanced_frameworks_mocked.py tests/integration/test_working_frameworks_mocked.py -q --maxfail=1 --disable-warnings
 
       - name: Run full integration tests (manual trigger only)
         if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
@@ -66,7 +66,7 @@ jobs:
           EMBEDDING_MODEL: text-embedding-3-small
           LLM_MODEL: gpt-4o-mini
         run: |
-          pytest tests/integration/ -q --maxfail=1
+          pytest tests/integration/ -q --maxfail=1 --disable-warnings
 
   docker-build:
     needs: test
