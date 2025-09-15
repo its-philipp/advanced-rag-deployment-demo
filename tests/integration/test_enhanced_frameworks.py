@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 # Add src to path
-sys.path.append(str(Path(__file__).parent / "src"))
+sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
 
 from src.agents.framework_monitor import FrameworkMonitor
 from src.agents.persistent_memory import PersistentMemoryManager

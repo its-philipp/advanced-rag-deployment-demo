@@ -8,3 +8,12 @@ email-validator>=2.0
 python-dotenv
 prometheus-client
 requests
+# Additional dependencies for integration tests
+psutil
+langchain
+langchain-openai
+langgraph
+crewai
+semantic-kernel
+numpy
+pandas
