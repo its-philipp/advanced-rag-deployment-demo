@@ -1,6 +1,6 @@
 # Advanced RAG System with Agentic AI Frameworks
 
-A comprehensive Retrieval-Augmented Generation (RAG) system featuring multiple AI agent frameworks including LangGraph, Semantic Kernel, and custom implementations. The project provides production-ready deployment configurations for Kubernetes, cloud platforms (GKE, AKS, EKS), and serverless environments.
+A comprehensive Retrieval-Augmented Generation (RAG) system powering a **personalized AI coaching application**. Features multiple AI agent frameworks including LangGraph, Semantic Kernel, and custom implementations for adaptive learning experiences. The project provides production-ready deployment configurations for Kubernetes, cloud platforms (GKE, AKS, EKS), and serverless environments.
 
 **Key Features:**
 - 🤖 **Multi-Framework Support**: Custom Agentic RAG, LangGraph, and Semantic Kernel implementations
