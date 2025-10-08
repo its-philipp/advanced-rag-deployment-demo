@@ -14,7 +14,63 @@ A comprehensive Retrieval-Augmented Generation (RAG) system featuring multiple A
 
 ---
 
-**Production-Ready RAG Backend with FastAPI & Cloud Deployment**
+## 🎯 What Can This App Do?
+
+This is a **Production-Ready Retrieval-Augmented Generation (RAG) system** that combines personalized AI coaching with advanced agentic AI frameworks. Perfect for building **personalized AI tutors, coaching assistants, or knowledge management systems** with rich user context and memory.
+
+### 📡 Available API Endpoints
+
+#### **1. Personalized Coaching API** (`/api/v1/*`)
+
+**Query & Coaching**
+- `POST /api/v1/coach` - Ask questions with personalized coaching and source attribution
+- `POST /api/v1/personalized-coach` - Enhanced coaching with hybrid search (personal + global docs)
+
+**User Management**
+- `GET /api/v1/users/{user_id}/profile` - Get user profile, preferences, and learning goals
+- `PUT /api/v1/users/{user_id}/preferences` - Update learning style and preferences
+- `PUT /api/v1/users/{user_id}/learning-goals` - Set/update learning goals
+- `GET /api/v1/users/{user_id}/context` - View recent conversation history
+
+**Document Management**
+- `POST /api/v1/index-sample-docs` - Load sample educational documents
+- `POST /api/v1/index-document` - Index a single global document
+- `POST /api/v1/users/{user_id}/documents` - Add documents to user's personal collection
+
+#### **2. Advanced Agentic RAG API** (`/api/agentic/*`)
+
+**Agentic Query Processing**
+- `POST /api/agentic/agentic-query` - Query with custom agentic RAG (all memory types)
+- `POST /api/agentic/semantic-kernel-query` - Query using Microsoft Semantic Kernel
+- `POST /api/agentic/langgraph-query` - Query using LangGraph framework
+- `POST /api/agentic/compare-frameworks` - Compare all three frameworks side-by-side
+
+**Memory Management**
+- `GET /api/agentic/memory-stats` - Get statistics about stored memories
+- `POST /api/agentic/store-semantic-memory` - Store facts, concepts, knowledge
+- `POST /api/agentic/store-procedural-memory` - Store skills, workflows, procedures
+- `GET /api/agentic/episodic-memories/{user_id}` - Retrieve user's past interactions
+- `GET /api/agentic/semantic-memories` - Query stored concepts and knowledge
+- `GET /api/agentic/procedural-memories` - Query stored procedures and skills
+
+**User Initialization**
+- `POST /api/agentic/initialize-user/{user_id}` - Initialize new user with default memories
+- `DELETE /api/agentic/clear-memories` - Clear all memories (testing only)
+
+#### **3. System Endpoints**
+- `GET /health` - Health check endpoint
+- `GET /metrics` - Prometheus metrics for monitoring
+
+### 🔑 Core Capabilities
+
+- **Personalized Learning** - Tracks user preferences, learning style, and goals
+- **Hybrid Search** - Combines user's personal documents with global knowledge base
+- **Source Attribution** - Every answer includes sources with confidence scores
+- **Multi-Framework Support** - Compare different AI agent implementations
+- **Advanced Memory** - Episodic (past events), Semantic (facts), Procedural (skills)
+- **Production Ready** - Monitoring, health checks, and cloud deployment configs
+
+---
 
 ## Quick Start
 
